@@ -11,17 +11,13 @@ typedef struct{
     u32   port;
     u32   threads;
 } Config;
+
 Config config;
+u8 running;
+
+#include "client.c"
 
 int main(int argc, char **argv){
-    if(argc == 1){
-        printf("[HELP]\n");
-        printf("-p(port): port on which http will be served\n");
-        printf("-t(thread): number of threads to use\n");
-        printf("-l(log): name of log file\n");
-        printf("-a(address): IP address to connect to\n");
-        return EXIT_SUCCESS;
-    };
     config.port = 8080;
     config.threads = 1;
     config.log = stdout;
@@ -64,7 +60,23 @@ int main(int argc, char **argv){
         goto CLEANUP;
     };
     tlog("[+] successful binding[%s:%d]\n", config.addr, config.port);
-    
+    if(listen(s, SOMAXCONN) == SOCKET_ERROR){
+        tlog("[-] could not listen on socket\n");
+        goto CLEANUP;
+    };
+    tlog("[+] listening...\n");
+    running = TRUE;
+    while(running){
+        struct sockaddr_in clientinfo;
+        u32 clientinfoSize = sizeof(clientinfo);
+        s64 clientFd = accept(s, (struct sockaddr*)&clientinfo, &clientinfoSize);
+        if(clientFd == SOCKET_ERROR){
+            tlog("[-] could not accept connection\n");
+            continue;
+        };
+        tlog("[+] accepted connection\n");
+        handleClient((void*)clientFd);
+    };
 
 CLEANUP:
     closesocket(s);
