@@ -76,6 +76,7 @@ int main(int argc, char **argv){
         };
         tlog("[+] accepted connection\n");
         handleClient((void*)clientFd);
+        closesocket(clientFd);
     };
 
 CLEANUP:
